@@ -1,0 +1,4 @@
+debug.py
+*.pyc
+test.sql
+testdata.dat

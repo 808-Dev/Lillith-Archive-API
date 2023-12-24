@@ -1,6 +1,6 @@
 ##SVN 1.01
 ##Author: Alex Merriam
-##Date: 10-26-2023
+##Date: 12-24-2023
 ##------------------------------------------------------------------
 ##Notes: Initial API implementation for Lillith.
 ##------------------------------------------------------------------ 
@@ -17,6 +17,6 @@ def returnException(errorCode, errorMsg=None):
         if errorCode == 5:
             return('A critical error has occurred. Ending instance for system stability.')
         if errorCode == 6:
-            return(f'Debug: '+str(errorMsg))
+            return('Debug: '+errorMsg)
 def exceptionList():
-    return([1,2,3,4,5])
+    return([1,2,3,4,5,6])
