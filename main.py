@@ -5,7 +5,7 @@
 ##Notes: Initial API implementation for Lillith. 
 ##------------------------------------------------------------------ 
 
-creds={'user':'alex','password':'pufpoLM10$!','host':'10.0.0.70','db':'lillith'}
+creds={'user':'hostUser','password':'hostPassword','host':'hostIP','db':'lillith'}
 
 ## Import modules safely into the current Lillith instance. Otherwise throw an error and exit.
 
