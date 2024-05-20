@@ -5,19 +5,22 @@
 ##Notes: Initial API implementation for Lillith. 
 ##------------------------------------------------------------------ 
 
-creds={'user':'hostUser','password':'hostPassword','host':'hostIP','db':'lillith'}
+creds= {'user':'',
+        'password':'',
+        'host':'',
+        'db':'lillith'}
 
 ## Import modules safely into the current Lillith instance. Otherwise throw an error and exit.
 
 try:
     from colorama import Fore, Back, Style
-    import sys, uvicorn, os
+    import sys, uvicorn, os, base64
     from libraries.error_handler.module import *
     from fastapi import FastAPI, HTTPException, Depends, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
     from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
-    from fastapi.responses import HTMLResponse
+    from fastapi.responses import HTMLResponse, FileResponse
     from typing import Union
 except ImportError as importException:
     ##raise Exception('Import Error: ' + str(importException)) ##Used for debugging only.
@@ -34,10 +37,10 @@ try:
 except:
     print(f'Import Error: {str(importException.name)} - ignoring module but usually this breaks critical functions.')
 
-authorizedUrls = ("https://localhost:8000/","https://127.0.0.1:8000/","https://tcode.808-dev.com/")
+authorizedUrls = ("https://localhost:8000/","https://127.0.0.1:8000/")
 
-app = FastAPI(title="Lillith API", description="This is the official API for Lillith.", version="23.10",
-              terms_of_service='https://saliibot.com/about/eula/', summary="This is the official API for Lillith",)
+app = FastAPI(title="Lillith API", description="This is the official API for Lillith.", version="1.00",
+              terms_of_service='https://saliibot.com/about/eula/', summary="This is the official API for Lillith.io", docs_url=None, redoc_url=None)
               #servers=[{"url": authorizedUrls}])
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 oauth2_schema = OAuth2PasswordBearer(tokenUrl="authorize")
@@ -77,8 +80,8 @@ def gblob(blobID: str):
     try:
         blobData = getBlob(str(blobID), creds)
         mimeType= json.loads(json.loads(blobData[0])['meta_data'])['mime_type']
-        return(mimeType)
-#        return(HTMLResponse(content=json.loads(blobData[0])['raw_data'],media_type=mimeType))
+        #return(base64.b64decode(json.loads(blobData[0])['raw_data'][15:]))
+        return(HTMLResponse(content=base64.b64decode(json.loads(blobData[0])['raw_data'][15:]),media_type=mimeType))
     except Exception as exception:
         raise HTTPException(status_code=500, detail=f'Unable to retrieve blob: {str(blobID)}')
 
@@ -87,13 +90,13 @@ def gblob(blobID: str):
 ##Create new data
 ##------------------------------------------------------------------
 
-@app.post("/post/", tags=["Instances Handling"], summary="This is the endpoint for creating new data.")
+@app.post("/post/{pid}/", tags=["Instances Handling"], summary="This is the endpoint for creating new data.")
 
-def ppost(data: Union[str, None] = None, token: str = Depends(oauth2_schema)):
-    try:
-        return(blobHandler(data, token, creds))
-    except Exception as exception:
-        raise HTTPException(status_code=500, detail=f'Unable to post blob: {str(data)}')
+def ppost(blobarray: Union[str,None] = None, pid: Union[int, None] = None, data: Union[str, None] = None, token: str = Depends(oauth2_schema)):
+    #try:
+        return(instanceHandler(pid, data, blobarray, creds))
+    #except Exception as exception:
+    #    raise HTTPException(status_code=500, detail=f'Unable to post instance: {str(data)}, error data: {exception}')
 
 ##------------------------------------------------------------------
 ##Create new datablob
@@ -150,8 +153,64 @@ async def ginstance(id):
     return(getInstance(id, creds))
 
 ##------------------------------------------------------------------
+## Get instances.
+##------------------------------------------------------------------
+
+@app.get("/instance/tag/{tag}", tags=["Data", "Instance Handling","Search"], summary="This endpoint returns a list instances that have that tag.")
+
+async def ginstancetag(tag: Union[str, None] = ''):
+	try:   
+		return(getInstanceTag(str(tag), creds))
+	except Exception as exception:
+		raise HTTPException(status_code=200, detail=['empty'])
+
+
+##------------------------------------------------------------------
+## Get instances list.
+##------------------------------------------------------------------
+
+async def ginstancetag(tag: Union[str, None] = ''):
+	try:   
+		return(getInstanceTag(str(tag), creds))
+	except Exception as exception:
+		raise HTTPException(status_code=200, detail=['empty'])
+
+##------------------------------------------------------------------
+## Get latest datablob list.
+##------------------------------------------------------------------
+
+@app.get("/instance/latest/", tags=["Data","Instance Handling","Search"], summary="This endpoint returns a list of the latest relations.")
+
+async def ginstancelatest():
+	return(getLatestInstances(creds))
+
+##------------------------------------------------------------------
+## Get datablob array.
+##------------------------------------------------------------------
+
+@app.get("/blob/meta/{id}", tags=["Blobs","Datablob Handling","Meta Data"], summary="This endpoint returns an array of variables associated with the data being looked up.")
+
+async def gblobdata(id: Union[str, None] = ''):
+	return(getblobdata(creds, str(id)))
+
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html_cdn():
+    return get_swagger_ui_html(
+    openapi_url=app.openapi_url,
+    title=f"{app.title} - Swagger UI",
+    # swagger_ui_dark.css CDN link
+    swagger_css_url='/css'
+)
+
+@app.get("/css", include_in_schema=False)
+async def custom_swagger_ui_html_cdn():
+	return(FileResponse('./css/custom.css'))
+
+##------------------------------------------------------------------
 ## Run the instance of Lillith.
 ##------------------------------------------------------------------
 
 if __name__ == "__main__":
-   uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+   uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
